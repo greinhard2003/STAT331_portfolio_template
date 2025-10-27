@@ -10,7 +10,7 @@ execute:
   echo: true
 ---
 
-[**My Grade:**]{.underline} I believe my grade equivalent to course work evidenced below to be an \_\_.
+[**My Grade:**]{.underline} I believe my grade equivalent to course work evidenced below to be a B.
 
 [**Learning Objective Evidence:**]{.underline} In the code chunks below, provide code from Lab or Challenge assignments where you believe you have demonstrated proficiency with the specified learning target. Be sure to specify **where** the code came from (e.g., Lab 4 Question 2).
 
@@ -1019,10 +1019,27 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-4-across
-#Lab 3 Question 8
-teacher_evals_clean |>
-  filter(if_any(everything(),  is.na)) |> #everything() checks all columns
-  select(ends_with("id"), everything())
+#Lab 3 Question 5 - revised
+teacher_evals_clean <- teachers_evals |>
+  rename(sex = gender) |>
+  select(-c(stud_grade_avg,
+    stud_grade_std,
+    stud_grade_var_coef,
+    percent_failed,
+    stud_grade_avg_cur,
+    stud_grade_std_cur,
+    stud_grade_var_coef_cur,
+    class_duration,
+    weekday,
+    time_of_day,
+    SET_score_1sem,
+    maximum_score)) |>
+  filter(no_participants >= 10) |>
+  mutate(teacher_id = as.character(teacher_id),
+         across(
+           .cols = c(teacher_id,
+                     seniority),
+           .fns = ~ as.numeric(.x)))
 ```
 
 **DVS-5: I can find summaries of variables across multiple groups.**
@@ -1151,10 +1168,27 @@ new_suspect <- person |>
 
 ```{r}
 #| label: pe-1-across
-#Lab 3 Question 8
-teacher_evals_clean |>
-  filter(if_any(everything(),  is.na)) |> #everything() checks all columns
-  select(ends_with("id"), everything())
+#Lab 3 Question 5 - revised
+teacher_evals_clean <- teachers_evals |>
+  rename(sex = gender) |>
+  select(-c(stud_grade_avg,
+    stud_grade_std,
+    stud_grade_var_coef,
+    percent_failed,
+    stud_grade_avg_cur,
+    stud_grade_std_cur,
+    stud_grade_var_coef_cur,
+    class_duration,
+    weekday,
+    time_of_day,
+    SET_score_1sem,
+    maximum_score)) |>
+  filter(no_participants >= 10) |>
+  mutate(teacher_id = as.character(teacher_id),
+         across(
+           .cols = c(teacher_id,
+                     seniority),
+           .fns = ~ as.numeric(.x)))
 ```
 
 -   using functions from the `map()` family
@@ -1193,10 +1227,27 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: pe-3-across
-#Lab 3 Question 8
-teacher_evals_clean |>
-  filter(if_any(everything(),  is.na)) |> #everything() checks all columns
-  select(ends_with("id"), everything())
+#Lab 3 Question 5 - revised
+teacher_evals_clean <- teachers_evals |>
+  rename(sex = gender) |>
+  select(-c(stud_grade_avg,
+    stud_grade_std,
+    stud_grade_var_coef,
+    percent_failed,
+    stud_grade_avg_cur,
+    stud_grade_std_cur,
+    stud_grade_var_coef_cur,
+    class_duration,
+    weekday,
+    time_of_day,
+    SET_score_1sem,
+    maximum_score)) |>
+  filter(no_participants >= 10) |>
+  mutate(teacher_id = as.character(teacher_id),
+         across(
+           .cols = c(teacher_id,
+                     seniority),
+           .fns = ~ as.numeric(.x)))
 ```
 
 -   using a `map()` function with **one** input (e.g., `map()`, `map_chr()`, `map_dbl()`, etc.)
@@ -1346,15 +1397,19 @@ table(teacher_evals_compare$SET_level, teacher_evals_compare$sen_level) |>
 ## Revising My Thinking
 
 <!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? -->
+The biggest way I have revised my thinking throughout the course is being able to look deeper into data and where it comes from. Initially I was just looking at datasets as tables, and looked at the data inside them very literally. The deepest I would look was something like "Column A is type X". Over time I have started to notice that some columns have connections with eachother or other tables. I have started to see that the dataset as a whole isn't enough to determine what the data is really about. I started looking into the origins of the dataset and began to understand the data I was working with at a deeper level which allowed me to work with it more effectively. The second way I have revised my thinking is by realizing that an output doesn't always mean I am getting the information I want. This finally clicked while I was revising lab 3 and I saw that I counted more teachers than there actually were when trying to investigate academic_degree, seniority, and sex. Initially I missed this because I wasn't focused on the number of teachers as much as I was trying to get the table to show a percentage so I missed the error. This taught me to look over my code more closely and check to make sure that everything is yielding results that actually make sense.
 
 <!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
 
 ## Extending My Thinking
 
 <!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? -->
+The main way I have extended my thinking is by exploring what ggplot2 has to offer. I have spent the most time researching how to tweak the colors of the different parts of my plots. I find it a little difficult to be creative with my plots so I have been trying to force myself to play with the colors in order to get better at it. The other way I have extended my thinking is by using the "?function_name()" functionality within Rstudio in order to learn about a new function or remind myself how to use one instead of googling the function or asking ChatGPT what it does. I have found that the built in documentation is usually enough if not more than I need to figure out how the function works and what it will allow me to do. This has also helped me avoid superseded and deprecated functions. 
 
 ## Peer Support & Collaboration
 
 <!-- Include an image or a description of feedback you gave that you are proud of (either in a peer review or in Discord). -->
+![I am proud of this feedback because I noticed a subtle issue with their answer that affected the correctess of their plot and statistical analysis. I tend to miss small issues like these myself and it is hard to debug sometimes, so I try to catch them in others peoples work so that they have an easier time debugging their code later.](Feedback_Image.png)
 
 <!-- Include a description of how you grew as a collaborator through the weekly pair programming activities.   -->
+During the pair programming activities I have learned how to explain my ideas to my partner better as the weeks have progressed. Initially I found it hard to to work effectively because I couldn't explain why something would work to someone that isn't as experienced with programming as I am. I found that giving examples along with my proposed solution allowed my partner to better understand why we were doing something rather than just moving on because we got the correct answer. I think this is an important skill to keep improving on because being a more effective team member will eventually make it so that any team I am a part of will work more efficiently.
