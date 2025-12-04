@@ -10,7 +10,7 @@ execute:
   echo: true
 ---
 
-[**My Grade:**]{.underline} I believe my grade equivalent to course work evidenced below to be a B.
+[**My Grade:**]{.underline} I believe my grade equivalent to course work evidenced below to be an A- .
 
 [**Learning Objective Evidence:**]{.underline} In the code chunks below, provide code from Lab or Challenge assignments where you believe you have demonstrated proficiency with the specified learning target. Be sure to specify **where** the code came from (e.g., Lab 4 Question 2).
 
@@ -38,7 +38,13 @@ teacher_evals <- read_csv(here("Week 3", "Challenge 3", "Data", "teacher_evals.c
 
 ```{r}
 #| label: wd-1-xlsx
-
+#Practice activity 4
+military <- read_xlsx("gov_spending_per_capita.xlsx",
+                      sheet = "Share of Govt. spending",
+                      skip  = 7,
+                      n_max = 190,
+                      na = c("xxx", "..", ". .")
+                      )
 ```
 
 **WD-2: I can select necessary columns from a dataset.**
@@ -262,13 +268,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -302,13 +310,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -318,43 +328,67 @@ ca_childcare |>
 
 ```{r}
 #| label: wd-4-string
-#Lab 4
-ca_childcare <- ca_childcare |> 
-  mutate(county_name = str_remove(county_name, " County"),
-         census_region = fct_collapse(.f = fct(county_name),
-                                      `Superior California`= superior_counties,
-                                      `North Coast` = north_coast_counties,
-                                      `San Fransisco Bay Area` = san_fran_counties,
-                                      `Northern San Joaquin Valley` = n_san_joaquin_counties,
-                                      `Central Coast` = central_coast_counties,
-                                      `Southern San Joaquin Valley` = s_san_joaquin_counties,
-                                      `Inland Empire` = inland_counties,
-                                      `Los Angeles County` = la_county,
-                                      `Orange County` = orange_county,
-                                      `San Diego-Imperial` = san_diego_imperial_counties))
+#Code from Lab 9
+unformatted_tbl <- evals_fct |>
+  mutate(
+    seniority = case_when(
+      seniority <= 4 ~ "Junior",
+      seniority > 8 ~ "Very Senior",
+      .default = "Senior"
+    ),
+    sex = str_to_title(sex),
+    academic_degree = case_when(
+      academic_degree == "dr" ~ "Doctorate",
+      academic_degree == "ma" ~ "Masters",
+      academic_degree == "no_dgr" ~ "No Degree",
+      academic_degree == "prof" ~ "Tenured Professor"
+    )
+  ) |> distinct(
+    teacher_id, 
+    seniority, 
+    sex, 
+    academic_degree
+  ) |> pivot_longer(
+    cols = c(seniority, sex, academic_degree),
+    names_to = "variable",
+    values_to = "level"
+  ) |> group_by(
+    variable,
+    level
+  ) |> summarise(
+    n = n_distinct(teacher_id),
+    .groups = "drop_last"
+  ) |> mutate(
+    variable = str_to_title(variable),
+    prop = n / sum(n)
+  ) |> ungroup()
 ```
 
 -   Date (example must use functions from **lubridate**)
 
 ```{r}
 #| label: wd-4-date
-#Lab 5 Clue #2
-get_fit_now_check_in |>
-  left_join(y = get_fit_now_member,
-            join_by(membership_id == id)) |>
-  left_join(y = interview,
-            join_by(person_id)) |>
-  left_join(y = person,
-            join_by(person_id == id)) |>
+#Lab 5 Clue #3
+new_suspect <- person |> 
   left_join(y = drivers_license,
-            join_by(license_id == id)) |> #All necessary data joined into one table
-  mutate(check_in_date = ymd(check_in_date)) |> #convert date to a Date type
-  filter(membership_status == "gold", #gold members have bags
-         str_detect(membership_id, "^48Z"), #member id started with 48Z
-         str_detect(plate_number, "H42W"), #license plate had H42W
-         month(check_in_date, label = TRUE) == "Jan", #Was in the gym on January 9th
-         day(check_in_date) == 9) |>
-  pull(name.x, transcript)
+            join_by(license_id == id)) |>
+  left_join(y = income,
+            join_by(ssn)) |>
+  left_join(y = facebook_event_checkin, 
+            join_by(id == person_id)) |> #combined necessary data into one table
+  mutate(date = ymd(date)) |> #Convert date to a date type
+  filter(gender == "female", #employer is female
+         hair_color == "red", # red hair
+         car_make == "Tesla", #drives a tesla model s
+         car_model == "Model S", 
+         height %in% c(65:67), #height is in this range
+         event_name == "SQL Symphony Concert", #went to this concert in December 2017
+         month(date, label = TRUE) == "Dec",
+         year(date) == 2017) |>
+  add_count(id) |> #Count each person who went to the concert 
+  filter(n == 3) |> #Employer went 3 times
+  select(name, id, annual_income) |> #verify for high income
+  distinct()
 ```
 
 **WD-5: I can use mutating joins to combine multiple dataframes.**
@@ -464,7 +498,10 @@ interview |>
 
 ```{r}
 #| label: wd-6-anti
-
+#Lab 5 Clue #3 - modified to fit requirement
+person |>
+  filter(name == "Miranda Priestly") |>
+  anti_join(interview, by = join_by(id == person_id))
 ```
 
 **WD-7: I can pivot dataframes from long to wide and visa versa**
@@ -521,6 +558,8 @@ The following assignments satisfy the above criteria:
 -   Lab 4
 -   Lab 3
 -   Challenge 3
+-   Lab 10
+-   Lab 9
 
 **R-2: I can write well documented and tidy code.**
 
@@ -582,7 +621,31 @@ person |>
 
 ```{r}
 #| label: r-2-3
-
+# Lab 10 question 8
+mycifun <- function(beta0, beta1, n){
+  stopifnot(is.numeric(beta0))
+  stopifnot(is.numeric(beta1))
+  stopifnot(is.numeric(n))
+  
+  x = runif(n, 0, 1)
+  ep = rnorm(n, mean = 0, sd = 1)
+  y = beta0 + beta1 * x + ep
+  
+  data_frame = data.frame(x = x, y = y)
+  lm_model = lm(y ~ x, data = data_frame) 
+  tidy_model = tidy(conf.int = TRUE, conf.level = 0.95, x = lm_model)
+  tidy_model |> 
+    mutate(cover = ifelse(term == "x" & beta1 >= conf.low & beta1 <= conf.high, 1, 0)) |>
+    filter(
+      term == "x"
+    ) |>
+    select(
+      estimate,
+      conf.low,
+      conf.high,
+      cover
+    )
+}
 ```
 
 **R-3: I can write robust programs that are resistant to changes in inputs.**
@@ -615,13 +678,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -631,7 +696,31 @@ ca_childcare |>
 
 ```{r}
 #| label: r-3-function-stops
-
+#Lab 10 question 8
+mycifun <- function(beta0, beta1, n){
+  stopifnot(is.numeric(beta0))
+  stopifnot(is.numeric(beta1))
+  stopifnot(is.numeric(n))
+  
+  x = runif(n, 0, 1)
+  ep = rnorm(n, mean = 0, sd = 1)
+  y = beta0 + beta1 * x + ep
+  
+  data_frame = data.frame(x = x, y = y)
+  lm_model = lm(y ~ x, data = data_frame) 
+  tidy_model = tidy(conf.int = TRUE, conf.level = 0.95, x = lm_model)
+  tidy_model |> 
+    mutate(cover = ifelse(term == "x" & beta1 >= conf.low & beta1 <= conf.high, 1, 0)) |>
+    filter(
+      term == "x"
+    ) |>
+    select(
+      estimate,
+      conf.low,
+      conf.high,
+      cover
+    )
+}
 ```
 
 ## Data Visualization & Summarization
@@ -642,12 +731,13 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-1-num
-#Lab 4 Question 8
+#Lab 4 Question 8 - revised
 ca_childcare |>
   ggplot(mapping = aes(x = mhi_2018, y = mfcc_infant)) +
   geom_point() + 
   geom_smooth(method = "lm") +
   theme_light() +
+  scale_x_continuous(labels = dollar) +
   labs(x = "Median Household Income (2018 Dollars)",
        y = NULL,
        title = "Median Weekly Full-Time Center Based Childcare for Infants")
@@ -669,7 +759,6 @@ ggplot(data = surveys,
         axis.text.y = element_text(margin = margin(t= 0, b = 0, r = 10, l = 0)),
         axis.title.x = element_text(margin = margin(t = 5, b = 0, r = 0, l = 0)))
 ```
-
 -   At least two categorical variables
 
 ```{r}
@@ -679,7 +768,7 @@ ggplot(data = teacher_evals_compare,
        mapping = aes(x = sen_level, fill = SET_level)) +
   geom_bar(position = "fill") +
   geom_text(
-    aes(label = scales::percent(after_stat(prop), accuracy = 1),
+    aes(label = scales::label_percent(accuracy = 1)(after_stat(prop)),
         group = SET_level),
     stat = "count",
     position = position_fill(vjust = 0.5),
@@ -751,13 +840,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -819,13 +910,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -859,13 +952,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -899,13 +994,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -945,24 +1042,22 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-3-1-ex-2
-# Challenge 3 Question 2 - revised to fit requirement
-ggplot(data = teacher_evals_compare, 
-       mapping = aes(x = sen_level, fill = SET_level)) +
-  geom_bar(position = "fill") +
-  geom_text(
-    aes(label = scales::percent(after_stat(prop), accuracy = 1),
-        group = SET_level),
-    stat = "count",
-    position = position_fill(vjust = 0.5),
-    color = "white") +
-  scale_y_continuous(labels = scales::label_percent()) +
-  labs(x = "Years of Experience",
-       y = NULL,
-       fill = "Evaluation Rating",
-       title = "Evaluation of Teachers' Use of Activities") +
-  theme_light() +
-  theme(legend.position = "top") +
-  scale_fill_brewer(palette = "Set1")
+#Lab 8 Question 4
+style_plot <- function(plot, theme_fn = theme_minimal, palette = RColorBrewer::brewer.pal(8, "Set2"), aesthetic){
+  
+  if(aesthetic == "fill"){
+    result <- plot +
+      theme_fn() +
+      scale_fill_manual(values = palette)
+  } else if (aesthetic == "color"){
+    result <- plot + 
+      theme_fn() +
+      scale_color_manual(values = palette)
+  } else {
+    stop("Usage: aesthetic must be 'color' or 'fill'")
+  }
+  return(result)
+}
 ```
 
 -   I can use annotations (e.g., `geom_text()`)
@@ -974,7 +1069,7 @@ ggplot(data = teacher_evals_compare,
        mapping = aes(x = sen_level, fill = SET_level)) +
   geom_bar(position = "fill") +
   geom_text(
-    aes(label = scales::percent(after_stat(prop), accuracy = 1),
+    aes(label = label_percent(accuracy = 1)(after_stat(prop)),
         group = SET_level),
     stat = "count",
     position = position_fill(vjust = 0.5),
@@ -993,7 +1088,28 @@ ggplot(data = teacher_evals_compare,
 
 ```{r}
 #| label: dvs-3-3
-
+# Lab 10 Question 13 - revised
+bound_dat |>
+  mutate(sim_num = row_number()) |>
+ggplot(aes(y = sim_num, x = estimate)) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high, color = factor(cover)), height = 0.3, linewidth = 0.8) +
+  geom_vline(xintercept = 0.5, linetype = "dashed") +
+  scale_color_manual(
+    values = c("0" = "red", "1" = "skyblue"),
+    labels = c("Does not include true slope", "Includes true slope"),
+    guide = "none"
+  ) +
+  labs(
+    title = "95% Confidence Intervals of Estimated Regression Slope\nfor 1000 Simulated Datasets",
+    subtitle = "CIs that do not include the population slope are highlighted in red",
+    x = "Slope Coefficient Estimate",
+    y = NULL
+  ) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(size = 11, color= "red")
+  )
 ```
 
 **DVS-4: I can calculate numerical summaries of variables.**
@@ -1002,44 +1118,54 @@ ggplot(data = teacher_evals_compare,
 
 ```{r}
 #| label: dvs-4-summarize
-#Lab 4 Question 5 - revised 
-ca_childcare |> 
-  group_by(census_region, study_year) |>
-  summarise(median_mhi_2018 = median(mhi_2018),
-            .groups = "drop") |>
-  filter(study_year %in% c(2008, 2018)) |>
-  pivot_wider(names_from = study_year,
-              values_from = median_mhi_2018) |>
-  rename("median_household_income_2008" = `2008`,
-         "median_household_income_2018" = `2018`) |>
-  arrange(desc("median_household_income_2018"))
+#Lab 9 Question 5 
+unformatted_tbl <- evals_fct |>
+  mutate(
+    seniority = case_when(
+      seniority <= 4 ~ "Junior",
+      seniority > 8 ~ "Very Senior",
+      .default = "Senior"
+    ),
+    sex = str_to_title(sex),
+    academic_degree = case_when(
+      academic_degree == "dr" ~ "Doctorate",
+      academic_degree == "ma" ~ "Masters",
+      academic_degree == "no_dgr" ~ "No Degree",
+      academic_degree == "prof" ~ "Tenured Professor"
+    )
+  ) |> distinct(
+    teacher_id, 
+    seniority, 
+    sex, 
+    academic_degree
+  ) |> pivot_longer(
+    cols = c(seniority, sex, academic_degree),
+    names_to = "variable",
+    values_to = "level"
+  ) |> group_by(
+    variable,
+    level
+  ) |> summarise(
+    n = n_distinct(teacher_id),
+    .groups = "drop_last"
+  ) |> mutate(
+    variable = str_to_title(variable),
+    prop = n / sum(n)
+  ) |> ungroup()
 ```
 
 -   Example using `across()`
 
 ```{r}
 #| label: dvs-4-across
-#Lab 3 Question 5 - revised
-teacher_evals_clean <- teachers_evals |>
-  rename(sex = gender) |>
-  select(-c(stud_grade_avg,
-    stud_grade_std,
-    stud_grade_var_coef,
-    percent_failed,
-    stud_grade_avg_cur,
-    stud_grade_std_cur,
-    stud_grade_var_coef_cur,
-    class_duration,
-    weekday,
-    time_of_day,
-    SET_score_1sem,
-    maximum_score)) |>
-  filter(no_participants >= 10) |>
-  mutate(teacher_id = as.character(teacher_id),
-         across(
-           .cols = c(teacher_id,
-                     seniority),
-           .fns = ~ as.numeric(.x)))
+#Lab 3 Question 6 - revised
+teacher_evals_clean |>
+  summarize(
+    across(
+      .cols = c(course_id, teacher_id),
+      .fns = ~ n_distinct(.x)
+    )
+  )
 ```
 
 **DVS-5: I can find summaries of variables across multiple groups.**
@@ -1097,7 +1223,36 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-6-ex-2
-
+#Lab 9 Question 6
+unformatted_tbl |> 
+  arrange(variable, level) |>
+  gt(
+    rowname_col = "level",
+    groupname_col = "variable"
+  ) |>
+  cols_label(
+    level = "Demographic",
+    n = "Count",
+    prop = "%"
+  ) |>
+  fmt_percent(
+    columns = prop,
+    decimals = 2
+  ) |>
+  tab_header(
+    title = "Demographics of Professors",
+    subtitle = "Student Evaluations at the University of Poland, Warsaw in 2020"
+  ) |>
+  tab_spanner(
+    label = "Professors",
+    columns = c(n, prop)
+  ) |> tab_style(
+  style = list(
+    cell_fill(color = "gray"),
+    cell_text(weight = "bold", color = "#333333")
+  ),
+  locations = cells_row_groups()
+  )
 ```
 
 -   I can arrange my table to have an intuitive ordering
@@ -1123,6 +1278,28 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-7-ex-1
+#Lab 9 Question 8
+missing_vals |>
+  gt() |>
+  cols_label(
+    variable = "Measurement Variable",
+    missing_value = "Missing Values"
+  ) |>
+  tab_header(
+    title = "Number of Missing Values for Fish Measurements",
+    subtitle = "Data Collected from 1989 to 2006 on the Blackfoot Fish River in Montana"
+  ) |> tab_style(
+  style = list(
+    cell_fill(color = "gray"),
+    cell_text(weight = "bold", color = "#333333")
+  ),
+  locations = cells_column_labels()
+  ) |> data_color(
+    columns = missing_value,
+    fn = function(x) {
+      ifelse(x == 0, "cyan4", "orangered")  
+    }
+  )
 
 ```
 
@@ -1130,7 +1307,40 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-7-ex-2
-
+#Lab 9 Question 5
+unformatted_tbl <- evals_fct |>
+  mutate(
+    seniority = case_when(
+      seniority <= 4 ~ "Junior",
+      seniority > 8 ~ "Very Senior",
+      .default = "Senior"
+    ),
+    sex = str_to_title(sex),
+    academic_degree = case_when(
+      academic_degree == "dr" ~ "Doctorate",
+      academic_degree == "ma" ~ "Masters",
+      academic_degree == "no_dgr" ~ "No Degree",
+      academic_degree == "prof" ~ "Tenured Professor"
+    )
+  ) |> distinct(
+    teacher_id, 
+    seniority, 
+    sex, 
+    academic_degree
+  ) |> pivot_longer(
+    cols = c(seniority, sex, academic_degree),
+    names_to = "variable",
+    values_to = "level"
+  ) |> group_by(
+    variable,
+    level
+  ) |> summarise(
+    n = n_distinct(teacher_id),
+    .groups = "drop_last"
+  ) |> mutate(
+    variable = str_to_title(variable),
+    prop = n / sum(n)
+  ) |> ungroup()
 ```
 
 ## Program Efficiency
@@ -1195,7 +1405,12 @@ teacher_evals_clean <- teachers_evals |>
 
 ```{r}
 #| label: pe-1-map-1
-
+# Lab 9 Question 7
+missing_vals <- fish |> 
+  map_int(~ sum(is.na(.x))) |>
+  enframe(name = "variable",
+          value = "missing_value") |>
+  arrange(missing_value)
 ```
 
 **PE-2: I can write functions to reduce repetition in my code.**
@@ -1204,21 +1419,79 @@ teacher_evals_clean <- teachers_evals |>
 
 ```{r}
 #| label: pe-2-1
-
+# Lab 7 Question 4
+rescale_01 <- function(vec) {
+  if(!is.numeric(vec)){
+    stop("Vector type must be numeric")
+  }
+  if(length(vec) <= 1){
+    stop("Vector must contain at least two elements")
+  }
+  rng <- range(vec, na.rm = TRUE)
+  (vec - rng[1]) / (rng[2] - rng[1])
+}
 ```
 
 -   Example 2: Function that operates on data frames
 
 ```{r}
 #| label: pe-2-2
-
+# Lab 8 Question 2 - revised
+pivot_table <- function(df, row, col){
+  stopifnot(is.data.frame(df))
+  result <- df |>
+      count({{row}}, {{col}}) |>
+    pivot_wider(
+      names_from = {{col}},
+      values_from = n
+    )
+  return(result)
+}
 ```
 
 -   Example 3: Function that operates on vectors *or* data frames
 
 ```{r}
 #| label: pe-2-3
-
+# Lab 8 Question 3 - revised
+make_boxplot <- function(df, x, y){
+  stopifnot(is.data.frame(df))
+  
+  x_name <- as_label(enquo(x))
+  y_name <- as_label(enquo(y))
+  
+  reformat <- function(str){
+    str |>
+      str_replace_all("_", " ") |>
+      str_to_title() |>
+      str_squish() |>
+      str_replace("Mm", "(mm)")
+  }
+  x_lab <- reformat(x_name)
+  y_lab <- reformat(y_name)
+  
+  title <- str_c(y_lab, "by", x_lab, sep = " ") |>
+    str_remove("\\(mm\\)\\ ")
+  
+  plot <- 
+    df |>
+    rescale_column({{y}}) |>
+      ggplot(
+        mapping = aes(x = {{x}}, y = {{y}}, fill = {{x}})
+      ) + 
+      geom_boxplot() +
+      geom_jitter(alpha = 0.2) + 
+      labs(
+        x = x_lab,
+        y = "",
+        title = title,
+        subtitle = y_lab,
+      ) + 
+      guides(fill = "none",
+             alpha = "none")
+  
+  return(plot)
+}
 ```
 
 **PE-3:I can use iteration to reduce repetition in my code.**
@@ -1227,41 +1500,45 @@ teacher_evals_clean <- teachers_evals |>
 
 ```{r}
 #| label: pe-3-across
-#Lab 3 Question 5 - revised
-teacher_evals_clean <- teachers_evals |>
-  rename(sex = gender) |>
-  select(-c(stud_grade_avg,
-    stud_grade_std,
-    stud_grade_var_coef,
-    percent_failed,
-    stud_grade_avg_cur,
-    stud_grade_std_cur,
-    stud_grade_var_coef_cur,
-    class_duration,
-    weekday,
-    time_of_day,
-    SET_score_1sem,
-    maximum_score)) |>
-  filter(no_participants >= 10) |>
-  mutate(teacher_id = as.character(teacher_id),
-         across(
-           .cols = c(teacher_id,
-                     seniority),
-           .fns = ~ as.numeric(.x)))
+# Lab 8 Question 1
+rescale_01 <- function(vec) {
+  if(!is.numeric(vec)){
+    stop("Vector type must be numeric")
+  }
+  if(length(vec) <= 1){
+    stop("Vector must contain at least two elements")
+  }
+  rng <- range(vec, na.rm = TRUE)
+  (vec - rng[1]) / (rng[2] - rng[1])
+}
+
+rescale_column <- function(df, cols){
+  result <- df |> mutate(
+    across({{cols}}, rescale_01)
+  )
+  return(result)
+}
+
 ```
 
 -   using a `map()` function with **one** input (e.g., `map()`, `map_chr()`, `map_dbl()`, etc.)
 
 ```{r}
 #| label: pe-3-map-1
-
+# Lab 10 Question 1
+results <- map_int(.x = 1:10000,
+                   .f = ~ randomBabies(4)
+                  )
 ```
 
 -   using a `map()` function with **more than one** input (e.g., `map_2()` or `pmap()`)
 
 ```{r}
 #| label: pe-3-map-2
-
+# Lab 9 Question 2
+var_table <- surveys |>
+  map_chr(.f = ~ class(.x)) |>
+  enframe(name = "variable", value = "data_type")
 ```
 
 **PE-4: I can use modern tools when carrying out my analysis.**
@@ -1294,13 +1571,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -1334,13 +1613,15 @@ ca_childcare |>
     facet_wrap(~ age_group, ncol = 3) +
   scale_y_continuous(
       limits = c(100, 500),
-      breaks = seq(100, 500, by = 100)) +
+      breaks = seq(100, 500, by = 100),
+      labels = dollar) +
   scale_x_continuous(
     limits = c(2008, 2018),
     breaks = seq(2008, 2018, by = 2)) +
   labs(title = "Weekly Median Price for Center-Based Childcare ($)",
        x = "Study Year",
-       y = NULL) +
+       y = NULL,
+       color = str_to_title("Census Region")) +
   theme_bw() +
   theme(panel.spacing =  grid::unit(10, "pt"),
         axis.text.x = element_text(size = 6))
@@ -1354,14 +1635,52 @@ ca_childcare |>
 
 ```{r}
 #| label: dsm-1-1
+#Lab 10 Question 1
+randomBabies <- function(n_babies){
+  stopifnot(is.numeric(n_babies))
+  babies <- 1:n_babies
+  parents <- sample(babies)
+  sum(parents == babies)
+}
 
+results <- map_int(.x = 1:10000,
+                   .f = ~ randomBabies(4)
+                  )
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dsm-1-2
+# Lab 10 Question 8 - 9
+mycifun <- function(beta0, beta1, n){
+  stopifnot(is.numeric(beta0))
+  stopifnot(is.numeric(beta1))
+  stopifnot(is.numeric(n))
+  
+  x = runif(n, 0, 1)
+  ep = rnorm(n, mean = 0, sd = 1)
+  y = beta0 + beta1 * x + ep
+  
+  data_frame = data.frame(x = x, y = y)
+  lm_model = lm(y ~ x, data = data_frame) 
+  tidy_model = tidy(conf.int = TRUE, conf.level = 0.95, x = lm_model)
+  tidy_model |> 
+    mutate(cover = ifelse(term == "x" & beta1 >= conf.low & beta1 <= conf.high, 1, 0)) |>
+    filter(
+      term == "x"
+    ) |>
+    select(
+      estimate,
+      conf.low,
+      conf.high,
+      cover
+    )
+}
 
+ci_dat <- map(.x = 1:1000,
+              .f = ~ mycifun(beta0 = 3, beta1 = 0.5, n = 100)
+              )
 ```
 
 **DSSM-2: I can conduct common statistical analyses in R.**
@@ -1397,6 +1716,7 @@ table(teacher_evals_compare$SET_level, teacher_evals_compare$sen_level) |>
 ## Revising My Thinking
 
 <!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? -->
+
 The biggest way I have revised my thinking throughout the course is being able to look deeper into data and where it comes from. Initially I was just looking at datasets as tables, and looked at the data inside them very literally. The deepest I would look was something like "Column A is type X". Over time I have started to notice that some columns have connections with eachother or other tables. I have started to see that the dataset as a whole isn't enough to determine what the data is really about. I started looking into the origins of the dataset and began to understand the data I was working with at a deeper level which allowed me to work with it more effectively. The second way I have revised my thinking is by realizing that an output doesn't always mean I am getting the information I want. This finally clicked while I was revising lab 3 and I saw that I counted more teachers than there actually were when trying to investigate academic_degree, seniority, and sex. Initially I missed this because I wasn't focused on the number of teachers as much as I was trying to get the table to show a percentage so I missed the error. This taught me to look over my code more closely and check to make sure that everything is yielding results that actually make sense.
 
 <!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
@@ -1404,12 +1724,15 @@ The biggest way I have revised my thinking throughout the course is being able t
 ## Extending My Thinking
 
 <!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? -->
-The main way I have extended my thinking is by exploring what ggplot2 has to offer. I have spent the most time researching how to tweak the colors of the different parts of my plots. I find it a little difficult to be creative with my plots so I have been trying to force myself to play with the colors in order to get better at it. The other way I have extended my thinking is by using the "?function_name()" functionality within Rstudio in order to learn about a new function or remind myself how to use one instead of googling the function or asking ChatGPT what it does. I have found that the built in documentation is usually enough if not more than I need to figure out how the function works and what it will allow me to do. This has also helped me avoid superseded and deprecated functions. 
+
+The main way I have extended my thinking is by exploring what ggplot2 has to offer. I have spent the most time researching how to tweak the colors of the different parts of my plots. I find it a little difficult to be creative with my plots so I have been trying to force myself to play with the colors in order to get better at it. The other way I have extended my thinking is by using the "?function_name()" functionality within Rstudio in order to learn about a new function or remind myself how to use one instead of googling the function or asking ChatGPT what it does. I have found that the built in documentation is usually enough if not more than I need to figure out how the function works and what it will allow me to do. This has also helped me avoid superseded and deprecated functions. I also spent a decent amount of time researching the capabilities of the gt package after that was introduced. I would have liked to spend more time working with it in class and develop skills with it because I find a lot of times where it would be useful to have a nice table to show some hard data in code reviews. 
 
 ## Peer Support & Collaboration
 
 <!-- Include an image or a description of feedback you gave that you are proud of (either in a peer review or in Discord). -->
+
 ![I am proud of this feedback because I noticed a subtle issue with their answer that affected the correctess of their plot and statistical analysis. I tend to miss small issues like these myself and it is hard to debug sometimes, so I try to catch them in others peoples work so that they have an easier time debugging their code later.](Feedback_Image.png)
 
 <!-- Include a description of how you grew as a collaborator through the weekly pair programming activities.   -->
+
 During the pair programming activities I have learned how to explain my ideas to my partner better as the weeks have progressed. Initially I found it hard to to work effectively because I couldn't explain why something would work to someone that isn't as experienced with programming as I am. I found that giving examples along with my proposed solution allowed my partner to better understand why we were doing something rather than just moving on because we got the correct answer. I think this is an important skill to keep improving on because being a more effective team member will eventually make it so that any team I am a part of will work more efficiently.

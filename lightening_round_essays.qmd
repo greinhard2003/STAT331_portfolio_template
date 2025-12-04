@@ -6,16 +6,23 @@ editor: visual
 
 **Answer each of the following questions with *one sentence* including a brief explanation.**
 
-1. Finish the sentence with another student’s name: "If [Name of Student] doesn’t earn an A, then nobody should, because..." Explain your choice and your reasoning.
+1.  Finish the sentence with another student’s name: "If \[Name of Student\] doesn’t earn an A, then nobody should, because..." Explain your choice and your reasoning.
 
+Answer: If Jared doesn't earn an A, then nobody should because he consistently was able to explain a solution to a problem if I was struggling to understand or help me track down bugs that I couldn't find.
 
-2. What was the most difficult part of the class for you? List a general topic, a specific problem, a kind of work we did, etc. and explain why.
+2.  What was the most difficult part of the class for you? List a general topic, a specific problem, a kind of work we did, etc. and explain why.
 
+Answer: The most difficult part of the class for me was making sure my data visualizations had all of the necessary information inside of the plots or tables. For example it didn't occur to me that including which university the teacher evaluations were from would make my plots more clear.
 
-3. What was the easiest part of the class for you? Explain why.
+3.  What was the easiest part of the class for you? Explain why.
 
+Answer: The easiest part of the class was once we got to functions because it finally started to feel like my other programming classes and is a design pattern I am more used to working with.
 
-4. What part of the class surprised or interested you the most? Explain why.
+4.  What part of the class surprised or interested you the most? Explain why.
 
+Answer: The part of the class I found most interesting was the part where we introduced the gt package, I liked the customization options of these tables, and I was able to think of multiple instances in the past where I would have rather made one of these tables instead of fighting with excel for a mediocre table.
 
-5. Give one piece of advice to a student just beginning a quarter of STAT 331 that will help them be successful in learning.
+5.  Give one piece of advice to a student just beginning a quarter of STAT 331 that will help them be successful in learning.
+
+Answer: I would tell them to wait an hour or two after finishing a lab or challenge and then go back and look through everything to check their work. I found I was far better at catching errors after taking a break than I was right after working through the entire assignment.
+
